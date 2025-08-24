@@ -1,0 +1,4 @@
+student_id,name,age,gender,math_score,science_score,english_score
+1,Alice,20,F,85,90,88
+2,Bob,21,M,78,85,80
+3,Charlie,19,M,92,87,85

@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-dark bg-dark" style="height: 50px; padding: 0;">
+  <div class="container-fluid d-flex justify-content-between align-items-center" style="height: 50px; padding-left: 30px; padding-right: 30px;">
+    <span class="navbar-brand mb-0 h6">Advisor Dashboard</span>
+    <a href="{{ url_for('logout') }}" class="btn btn-outline-light btn-sm px-3">Logout</a>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 bg-dark text-white sidebar-wrapper p-0">
+      <div class="sidebar-content p-3">
+        <h5 class="sidebar-title">Dashboard Menu</h5>
+        <ul class="nav flex-column mt-3">
+          <li class="nav-item">
+            <a href="#" class="nav-link text-white" onclick="showSection('pieChartSection')">
+              <i class="bi bi-pie-chart-fill"></i> Risk Pie Chart
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link text-white" onclick="showSection('attentionSection')">
+              <i class="bi bi-exclamation-triangle-fill"></i> Students Requiring Attention
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link text-white" onclick="showSection('comparisonSection')">
+              <i class="bi bi-bar-chart-line"></i> Compare Students
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 col-lg-10 content-wrapper">
+      <div class="mt-3">
+        <h4>Welcome, {{ current_user.username }}!</h4>
+        <p class="text-muted">Use categorized data to support at-risk students.</p>
+      </div>
+
+      <!-- Student Table (always visible) -->
+      <div id="studentTableSection" class="section">
+        <h4>Student Data</h4>
+        <div class="table-responsive">
+          <table class="table table-striped table-sm mt-3" style="font-size: 0.9rem;">
+            <thead>
+              <tr>
+                {% for col in columns %}
+                  <th>{{ col }}</th>
+                {% endfor %}
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for student in students %}
+                <tr>
+                  {% for col in columns %}
+                    <td>{{ student[col] }}</td>
+                  {% endfor %}
+                  <td>
+                    <a href="{{ url_for('student_profile', student_id=student['student_id']) }}" class="btn btn-sm btn-info">
+                      View Profile
+                    </a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Risk Pie Chart -->
+      <div id="pieChartSection" class="section d-none">
+        <h4>Risk Level Distribution (Pie Chart)</h4>
+        <canvas id="pieChart"></canvas>
+      </div>
+
+      <!-- Students Requiring Attention -->
+      <div id="attentionSection" class="section d-none">
+        <h4>Students Requiring Attention</h4>
+        <p class="text-muted">High risk students with low attendance.</p>
+        <table class="table table-bordered table-striped">
+          <thead class="table-dark">
+            <tr>
+              <th>student_id</th>
+              <th>name</th>
+              <th>attendance_percent</th>
+              <th>Risk_Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in attention_students %}
+            <tr>
+              <td>{{ s.student_id }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ '%.2f'|format(s.attendance_percent) if s.attendance_percent is not none else '' }}</td>
+              <td>{{ s.Risk_Level }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="4" class="text-center">No students require attention right now.</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Student Comparison Section -->
+      <div id="comparisonSection" class="section d-none">
+        <h4>Compare Students</h4>
+        <p class="text-muted">Select students and subjects to compare their marks.</p>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="compareStudents" class="form-label">Select Students:</label>
+            <select id="compareStudents" class="form-select" multiple>
+              {% for student in students %}
+                <option value="{{ student.student_id }}">{{ student.name }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Hold Ctrl (Windows) / Cmd (Mac) to select multiple students.</small>
+          </div>
+          <div class="col-md-6">
+            <label for="compareSubjects" class="form-label">Select Subjects:</label>
+            <select id="compareSubjects" class="form-select" multiple>
+              {% for col in subject_columns %}
+                <option value="{{ col }}">{{ col }}</option>
+              {% endfor %}
+            </select>
+            <small class="text-muted">Hold Ctrl / Cmd to select multiple subjects.</small>
+          </div>
+        </div>
+
+        <button class="btn btn-primary mb-3" onclick="renderComparisonChart()" style="margin-top: -1000px;">Compare</button>
+
+        <canvas id="comparisonChart" style="margin-top: -450px;"></canvas>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Data for JS -->
+<script>
+  const riskData = {{ risk_data | tojson | safe }};
+  const students = {{ students | tojson | safe }};
+
+  function renderPieChart() {
+    if (!riskData) return;
+    const ctx = document.getElementById('pieChart');
+    if (!ctx) return;
+    new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(riskData || {}),
+        datasets: [{
+          data: Object.values(riskData || {}),
+          backgroundColor: ['#dc3545', '#ffc107', '#28a745']
+        }]
+      },
+      options: { plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  // Show / hide sections (Student Data always visible)
+  function showSection(sectionId) {
+    document.querySelectorAll('.section').forEach(sec => {
+      if (sec.id !== "studentTableSection") {  // never hide Student Data
+        sec.classList.add('d-none');
+      }
+    });
+
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.classList.remove('d-none');
+      el.scrollIntoView({ behavior: 'smooth' });
+      if (sectionId === 'pieChartSection') renderPieChart();
+    }
+  }
+
+  // Render Student Comparison Chart
+  function renderComparisonChart() {
+    const selectedStudentIds = Array.from(document.getElementById('compareStudents').selectedOptions).map(opt => opt.value);
+    const selectedSubjects = Array.from(document.getElementById('compareSubjects').selectedOptions).map(opt => opt.value);
+
+    if (selectedStudentIds.length === 0 || selectedSubjects.length === 0) {
+      alert("Please select at least one student and one subject.");
+      return;
+    }
+
+    const filteredStudents = students.filter(s => selectedStudentIds.includes(s.student_id.toString()));
+
+    const datasets = filteredStudents.map((student, idx) => ({
+      label: student.name,
+      data: selectedSubjects.map(subj => student[subj] ?? 0),
+      borderColor: `hsl(${idx * 60}, 70%, 50%)`,
+      backgroundColor: 'transparent',
+      tension: 0.3,
+      fill: false,
+      pointRadius: 4
+    }));
+
+    const ctx = document.getElementById('comparisonChart').getContext('2d');
+    if (window.comparisonChartInstance) {
+      window.comparisonChartInstance.destroy();
+    }
+
+    window.comparisonChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: selectedSubjects,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' },
+          tooltip: { enabled: true }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            suggestedMax: 100,
+            title: { display: true, text: 'Marks' }
+          },
+          x: {
+            title: { display: true, text: 'Subjects' }
+          }
+        }
+      }
+    });
+  }
+</script>
+
+{% endblock %}

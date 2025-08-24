@@ -1,0 +1,10 @@
+student_id,name,gender,age,semester,math_marks,science_marks,english_marks,attendance_percent
+1,Alice,F,20,1,85,78,92,95
+2,Bob,M,21,1,75,82,88,90
+3,Charlie,M,22,1,65,70,75,85
+4,Diana,F,20,2,88,90,85,96
+5,Edward,M,21,2,70,72,80,88
+6,Fiona,F,22,2,95,88,91,97
+7,George,M,20,3,60,65,70,80
+8,Hannah,F,21,3,82,85,88,92
+9,Ian,M,22,3,78,75,80,89

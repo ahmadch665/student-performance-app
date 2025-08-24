@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Faculty Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+    body {
+        display: flex;
+        min-height: 100vh;
+        margin: 0;
+        font-family: Arial, sans-serif;
+    }
+    /* Sidebar */
+    #sidebar {
+        width: 220px;
+        background-color: #343a40;
+        color: white;
+        flex-shrink: 0;
+        padding-top: 20px;
+        position: fixed;
+        height: 100vh;
+        overflow-y: auto;
+    }
+    #sidebar h5 {
+        padding-left: 20px;
+        margin-bottom: 15px;
+    }
+    #sidebar ul {
+        list-style: none;
+        padding-left: 0;
+    }
+    #sidebar ul li {
+        padding: 12px 20px;
+        cursor: pointer;
+    }
+    #sidebar ul li:hover, #sidebar ul li.active {
+        background-color: #495057;
+    }
+    #sidebar ul li span {
+        pointer-events: none;
+    }
+
+    /* Main content */
+    #content {
+        margin-left: 220px;
+        padding: 20px;
+        width: 100%;
+    }
+
+    .chart-section {
+        display: none;
+        margin-top: 30px;
+    }
+    .chart-section.active {
+        display: block;
+    }
+
+    /* Table styling */
+    .student-data-table {
+        width: 100%;
+        margin-bottom: 40px;
+        border-collapse: collapse; /* Ensure borders collapse nicely */
+    }
+    .student-data-table th, .student-data-table td {
+        border-right: 1px solid #dee2e6; /* vertical lines between columns */
+        padding: 8px; /* add some padding for readability */
+    }
+    .student-data-table th:last-child, .student-data-table td:last-child {
+        border-right: none; /* no border on last column */
+    }
+
+    .filter-label {
+        font-weight: bold;
+        margin-right: 10px;
+    }
+    .risk-filter {
+        margin-bottom: 20px;
+    }
+</style>
+
+</head>
+<body>
+    <nav id="sidebar">
+        <h5>Dashboard Menu</h5>
+        <ul id="sidebar-menu">
+            <li class="active" data-target="risk-pie-chart">Risk Pie Chart</li>
+            <li data-target="subject-bar-chart">Subject Bar Chart</li>
+            <li data-target="trend-line-chart">Trend Line Chart</li>
+            <li data-target="radar-chart">Radar Chart</li>
+        </ul>
+
+        <div class="p-3 mt-4">
+            <label class="filter-label" for="riskFilter">Filter by Risk Level:</label>
+            <select id="riskFilter" class="form-select">
+                <option value="all" selected>All</option>
+                {% for risk in risk_data.keys() %}
+                <option value="{{ risk }}">{{ risk }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="p-3 mt-3">
+    <label class="filter-label">Export Results:</label>
+    <div class="d-flex gap-2">
+        <button id="exportCSV" class="btn btn-outline-light btn-sm">Export CSV</button>
+    </div>
+</div>
+    </nav>
+
+    <main id="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Faculty Dashboard</h2>
+        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
+    </div>
+
+   
+
+    <!-- rest of your content -->
+
+
+        <!-- Student Data Table -->
+        {% if students %}
+            <div>
+                <h4>Student Data</h4>
+                <div style="overflow-x:auto;">
+                    <table class="table table-striped student-data-table" id="studentTable">
+                        <thead>
+                            <tr>
+                                {% for col in columns %}
+                                    <th>{{ col.replace('_', ' ').capitalize() }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for student in students %}
+                                <tr data-risk="{{ student.Risk_Level }}">
+                                    {% for col in columns %}
+                                        <td>{{ student[col] }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% else %}
+            <p>No student data available.</p>
+        {% endif %}
+
+        <!-- Charts Sections -->
+        <div id="risk-pie-chart" class="chart-section active">
+            <h4>Risk Level Distribution</h4>
+            <canvas id="pieChart"></canvas>
+        </div>
+
+        <div id="subject-bar-chart" class="chart-section">
+            <h4>Average Marks by Subject</h4>
+            <canvas id="barChart"></canvas>
+        </div>
+
+        <div id="trend-line-chart" class="chart-section">
+            <h4>Trend Over Time</h4>
+            <canvas id="lineChart"></canvas>
+        </div>
+
+        <div id="radar-chart" class="chart-section">
+            <h4>Student Performance Radar</h4>
+            <label for="radarStudentSelect" class="form-label">Select Student:</label>
+            <select id="radarStudentSelect" class="form-select" style="max-width: 300px; margin-bottom: 20px;">
+                {% for student_name in student_names %}
+                <option value="{{ student_name }}">{{ student_name }}</option>
+                {% endfor %}
+            </select>
+            <canvas id="radarChart"></canvas>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+   // Sidebar menu click handler for switching charts + smooth scroll
+const menuItems = document.querySelectorAll('#sidebar-menu li');
+const chartSections = document.querySelectorAll('.chart-section');
+
+menuItems.forEach(item => {
+    item.addEventListener('click', () => {
+        // Remove active from all menu items and charts
+        menuItems.forEach(i => i.classList.remove('active'));
+        chartSections.forEach(section => section.classList.remove('active'));
+
+        // Add active to clicked menu and its chart
+        item.classList.add('active');
+        const targetId = item.getAttribute('data-target');
+        const targetSection = document.getElementById(targetId);
+        targetSection.classList.add('active');
+
+        // Smooth scroll to the chart section
+        targetSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+});
+
+
+        // Filter table rows by risk level
+        const riskFilter = document.getElementById('riskFilter');
+        const studentTable = document.getElementById('studentTable');
+
+        riskFilter.addEventListener('change', () => {
+            const filterValue = riskFilter.value;
+            const rows = studentTable.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                const risk = row.getAttribute('data-risk');
+                if (filterValue === 'all' || risk === filterValue) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Also filter pie chart data to only visible rows
+            updatePieChartFilter(filterValue);
+        });
+
+        // --- Chart.js code setup ---
+
+        // Risk Pie Chart Data
+// Risk Pie Chart Data
+const riskData = {{ risk_data | tojson }};
+const riskLabels = Object.keys(riskData);
+const riskCounts = Object.values(riskData);
+
+const riskColorsMap = {
+  'Risk': '#dc3545',      // red
+  'Average': '#ffc107',   // yellow
+  'Advanced': '#198754'    // green
+};
+
+const riskColors = riskLabels.map(label => riskColorsMap[label] || '#6c757d');
+
+const pieCtx = document.getElementById('pieChart').getContext('2d');
+let pieChart = new Chart(pieCtx, {
+    type: 'pie',
+    data: {
+        labels: riskLabels,
+        datasets: [{
+            data: riskCounts,
+            backgroundColor: riskColors
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { position: 'bottom' } }
+    }
+});
+
+
+        // Subject Bar Chart Data
+        const subjectData = {{ subject_averages | tojson }};
+        const subjectLabels = Object.keys(subjectData);
+        const subjectAverages = Object.values(subjectData);
+
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        let barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: {
+                labels: subjectLabels,
+                datasets: [{
+                    label: 'Average Marks',
+                    data: subjectAverages,
+                    backgroundColor: '#0d6efd'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        // Trend Line Chart Data
+        const trendData = {{ trend_data | tojson }};
+        const semesters = {{ semesters | tojson }};
+
+        const lineCtx = document.getElementById('lineChart').getContext('2d');
+
+        let datasets = [];
+        for (const [subject, values] of Object.entries(trendData)) {
+            datasets.push({
+                label: subject,
+                data: values,
+                fill: false,
+                borderColor: randomColor(),
+                tension: 0.1
+            });
+        }
+
+        let lineChart = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: semesters,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+
+        // Radar Chart Data & Update
+        const studentRadarAll = {{ student_radar_all | tojson }};
+        const radarCtx = document.getElementById('radarChart').getContext('2d');
+
+        let radarChart;
+
+        function updateRadarChart(studentName) {
+            const data = studentRadarAll[studentName];
+            if (!data) return;
+
+            const labels = Object.keys(data);
+            const values = Object.values(data);
+
+            if (radarChart) {
+                radarChart.destroy();
+            }
+
+            radarChart = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: studentName,
+                        data: values,
+                        fill: true,
+                        backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                        borderColor: 'rgba(13, 110, 253, 1)',
+                        pointBackgroundColor: 'rgba(13, 110, 253, 1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        const radarStudentSelect = document.getElementById('radarStudentSelect');
+        radarStudentSelect.addEventListener('change', () => {
+            updateRadarChart(radarStudentSelect.value);
+        });
+
+        // Initialize radar chart with first student
+        if (radarStudentSelect.options.length > 0) {
+            updateRadarChart(radarStudentSelect.value);
+        }
+
+        // Utility to generate random colors for charts
+        function randomColor() {
+            const r = Math.floor(Math.random() * 200);
+            const g = Math.floor(Math.random() * 200);
+            const b = Math.floor(Math.random() * 200);
+            return `rgb(${r},${g},${b})`;
+        }
+
+        // Filter pie chart data based on table filter
+        function updatePieChartFilter(filterValue) {
+            // Recalculate risk counts from visible table rows
+            const rows = studentTable.querySelectorAll('tbody tr');
+            const counts = {};
+
+            rows.forEach(row => {
+                if (row.style.display !== 'none') {
+                    const risk = row.getAttribute('data-risk');
+                    counts[risk] = (counts[risk] || 0) + 1;
+                }
+            });
+
+            // Update pie chart data
+            pieChart.data.labels = Object.keys(counts);
+            pieChart.data.datasets[0].data = Object.values(counts);
+            pieChart.update();
+        }
+        document.getElementById('exportCSV').addEventListener('click', () => {
+    window.location.href = '/export_csv';
+});
+
+
+
+    </script>
+</body>
+</html>

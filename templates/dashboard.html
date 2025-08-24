@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block content %}
+
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-dark bg-dark" style="height: 50px; padding: 0;">
+  <div class="container-fluid d-flex justify-content-between align-items-center" style="height: 50px; padding-left: 30px; padding-right: 30px;">
+    <span class="navbar-brand mb-0 h6" style="margin: 0; line-height: 50px;">Admin Dashboard</span>
+    <a href="{{ url_for('logout') }}" 
+       class="btn btn-outline-light btn-sm px-3" 
+       style="font-size: 14px; height: 30px; line-height: 1.5;">
+      <i class="bi bi-box-arrow-right"></i> Logout
+    </a>
+  </div>
+</nav>
+
+<div class="container-fluid">
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+            {{ message | safe }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% if model %}
+  <div class="row">
+    <!-- Sidebar -->
+    <div class="col-md-3 col-lg-2 bg-dark text-white sidebar-wrapper p-0">
+      <div class="sidebar-content p-3">
+        <div id="sidebarMenu" class="sidebar-menu">
+          <h5 class="sidebar-title">Dashboard Menu</h5>
+          <ul class="nav flex-column mt-3">
+            <li class="nav-item">
+              <a href="#pieChartSection" class="nav-link text-white" onclick="showChart('pieChartSection')">
+                <i class="bi bi-pie-chart-fill"></i> <span class="menu-text">Risk Pie Chart</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#barChartSection" class="nav-link text-white" onclick="showChart('barChartSection')">
+                <i class="bi bi-bar-chart-line-fill"></i> <span class="menu-text">Subject Bar Chart</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#trendChartSection" class="nav-link text-white" onclick="showChart('trendChartSection')">
+                <i class="bi bi-graph-up"></i> <span class="menu-text">Trend Line Chart</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="#radarChartSection" class="nav-link text-white" onclick="showChart('radarChartSection')">
+                <i class="bi bi-radar"></i> <span class="menu-text">Radar Chart</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" onclick="showFocusAreaSection()">
+                <i class="fa fa-exclamation-circle"></i> Student Focus Areas
+              </a>
+            </li>
+
+            <!-- Filter by Risk -->
+            <li class="nav-item mt-3 px-2">
+              <label for="riskFilter" class="form-label text-white small">Filter by Risk Level</label>
+              <select id="riskFilter" class="form-select form-select-sm">
+                <option value="all">All</option>
+                <option value="Advanced">Advanced</option>
+                <option value="Average">Average</option>
+                <option value="Risk">Risk</option>
+              </select>
+            </li>
+
+            <li class="nav-item mt-3 px-2">
+              <a href="{{ url_for('export_csv') }}" class="btn btn-success btn-sm w-100">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+              </a>
+            </li>
+
+            <!-- Add Faculty/Advisor button -->
+<li class="nav-item mt-4 px-2">
+  <a href="{{ url_for('add_user_page') }}" class="btn btn-primary btn-sm w-100">
+    Add Faculty / Advisor
+  </a>
+  <a href="{{ url_for('faculty_advisor_list') }}" class="btn btn-primary mt-4">
+    View Faculty & Advisor List
+</a>
+
+</li>
+
+
+
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="col-md-9 col-lg-10 content-wrapper">
+      <div class="alert alert-success mt-3">
+        Best Model: <strong>{{ model }}</strong> | Accuracy: <strong>{{ accuracy }}%</strong>
+      </div>
+
+      <div class="mb-4">
+        <h4>Student Data</h4>
+        {{ table | safe }}
+      </div>
+
+      <div class="mb-4" id="pieChartSection">
+        <h4>Risk Level Distribution (Pie Chart)</h4>
+        <canvas id="pieChart"></canvas>
+      </div>
+
+      <div class="mb-4" id="barChartSection">
+        <h4>Subject Average Marks (Bar Chart)</h4>
+        <canvas id="barChart"></canvas>
+      </div>
+
+      <div class="mb-4" id="trendChartSection">
+        <h4>Trend Over Semesters (Line Chart)</h4>
+        <canvas id="trendChart"></canvas>
+      </div>
+
+      <div class="mb-4" id="radarChartSection">
+        <h4>Student Performance (Radar Chart)</h4>
+        <select id="studentSelector" class="form-select w-auto mb-3"></select>
+        <canvas id="radarChart"></canvas>
+      </div>
+
+      <div id="focusAreaSection" style="display:none;">
+        <h3>Student Focus Areas</h3>
+        <div class="form-group">
+          <label for="focusStudentSelector">Select Student:</label>
+          <select id="focusStudentSelector" class="form-control">
+            <option value="">-- Select --</option>
+            {% for student in student_names %}
+              <option value="{{ student }}">{{ student }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div id="focusList" style="margin-top:15px;">
+          <!-- Weak subjects / low attendance will appear here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+<div class="text-center mt-5">
+  <form method="GET" action="{{ url_for('predict') }}" class="d-inline-block">
+    <div class="mb-3">
+      <label for="modelSelect" class="form-label fw-bold">Select Model for Prediction:</label>
+      <select id="modelSelect" name="model" class="form-select form-select-lg w-auto mx-auto">
+        <option value="SVM" {% if best_model_name == 'SVM' %}selected{% endif %}>SVM</option>
+        <option value="DecisionTree" {% if best_model_name == 'DecisionTree' %}selected{% endif %}>Decision Tree</option>
+        <option value="KNN" {% if best_model_name == 'KNN' %}selected{% endif %}>K-Nearest Neighbors</option>
+      </select>
+    </div>
+
+    {% if best_model_name %}
+    <div class="form-text text-success mb-3">
+      Suggested: <strong>{{ best_model_name }}</strong> (Highest Accuracy)
+    </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-primary btn-lg">
+      Run Predictions
+    </button>
+  </form>
+</div>
+{% endif %}
+
+</div>
+
+{% if model %}
+<!-- ChartJS -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Data for JS -->
+<script>
+  const riskData = {{ risk_data | tojson | safe }};
+  const subjectData = {{ subject_data | tojson | safe }};
+  const trendData = {{ trend_data | tojson | safe }};
+  const semesters = {{ semesters | tojson | safe }};
+  const studentRadarData = {{ student_radar_all | tojson | safe }};
+  const studentNames = {{ student_names | tojson | safe }};
+  const studentFocusAreas = {{ student_focus_areas | tojson | safe }};
+</script>
+
+<!-- External JS -->
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endif %}
+{% endblock %}

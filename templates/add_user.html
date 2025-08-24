@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'success' if category=='success' else 'danger' }} alert-dismissible fade show" role="alert">
+          {{ message }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- Back button -->
+  <a href="{{ url_for('predict') }}" class="btn btn-secondary mt-3">⬅ Back to Admin Dashboard</a>
+
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <div class="card p-4 shadow">
+        <h4 class="card-title mb-4">Add Faculty / Advisor</h4>
+        <form action="{{ url_for('add_user') }}" method="POST">
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <input type="text" name="username" id="username" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" name="email" id="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <input type="password" name="password" id="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label for="role" class="form-label">Role</label>
+            <select name="role" id="role" class="form-select" required>
+              <option value="">Select Role</option>
+              <option value="2">Faculty</option>
+              <option value="3">Advisor</option>
+            </select>
+          </div>
+
+          <!-- Subject input, hidden by default -->
+          <div class="mb-3" id="subject-div" style="display: none;">
+            <label for="subject" class="form-label">Add Subjects (Faculty only)</label>
+            <input type="text" name="subject" id="subject" class="form-control" placeholder="e.g., math, science">
+            <small class="form-text text-muted">Separate multiple subjects with commas. '_marks' will be automatically added (e.g., math → math_marks)</small>
+          </div>
+
+          <button type="submit" class="btn btn-primary w-100">Add User</button>
+        </form>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Show subject input only if role is Faculty
+document.getElementById('role').addEventListener('change', function() {
+  var subjectDiv = document.getElementById('subject-div');
+  if (this.value === '2') { // Faculty
+    subjectDiv.style.display = 'block';
+  } else {
+    subjectDiv.style.display = 'none';
+  }
+});
+</script>
+{% endblock %}

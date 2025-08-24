@@ -1,0 +1,5 @@
+student_id,name,gender,age,math_marks,science_marks,english_marks,attendance_percent
+1,Ali,Male,18,75,80,70,92
+2,Ayesha,Female,19,65,60,72,88
+3,Bilal,Male,18,55,50,60,75
+4,Fatima,Female,20,90,95,85,98

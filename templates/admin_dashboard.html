@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(to right, #96c3ef, #5e539a);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-container {
+            max-width: 600px;
+            margin: auto;
+            margin-top: 80px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .card-header {
+            background: #007bff;
+            color: white;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+            padding: 20px;
+            font-size: 1.5rem;
+        }
+        .btn-custom {
+            background: #007bff;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-custom:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        .alert {
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="card">
+        <div class="card-header">
+            Admin Dashboard
+        </div>
+        <div class="card-body p-4">
+            <h4 class="mb-3 text-center">Upload Dataset</h4>
+            <form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <input type="file" class="form-control" name="dataset" accept=".csv" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-custom">Upload</button>
+                </div>
+            </form>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                <div class="mt-4">
+                  {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} mt-2">{{ message }}</div>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h3>Upload CSV Dataset</h3>
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="dataset" accept=".csv" required class="form-control mb-3">
+    <button type="submit" class="btn btn-success">Upload</button>
+  </form>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="alert alert-{{ category }} mt-3">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+</div>
+{% endblock %}

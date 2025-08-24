@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <!-- Profile Heading -->
+    <div>
+      <h3>Profile: {{ student.name }} (ID: {{ student.student_id }})</h3>
+      <!-- Past Risk Levels -->
+      <div class="mt-2">
+        <h5>Past Risk Levels</h5>
+        <ul>
+          {% for r in past_risk %}
+            <li>{{ r }}</li>
+          {% else %}
+            <li>No past risk records available.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <!-- Back to Dashboard Button -->
+    <div>
+      <a href="{{ url_for('advisor_dashboard') }}" class="btn btn-secondary mb-2">
+        ⬅ Back to Dashboard
+      </a>
+      <!-- Attendance can also be placed here if needed -->
+      <div class="mt-2">
+        <h5>Attendance</h5>
+        <p>{{ attendance }}%</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Marks Trend Line Chart (Subjects vs Marks) -->
+  <div class="mb-4">
+    <h5>Marks Trend (Connected Line)</h5>
+    <canvas id="trendChart"></canvas>
+  </div>
+
+  <!-- Subject Strengths/Weaknesses (Radar Chart) -->
+  <div class="mb-4">
+    <h5>Subject-wise Performance</h5>
+    <canvas id="radarChart"></canvas>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const subjects = {{ radar_data.keys() | list | tojson }};
+const marks = {{ radar_data.values() | list | tojson }};
+
+// Trend Line Chart (Subjects vs Marks)
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: subjects,
+    datasets: [{
+      label: 'Marks',
+      data: marks,
+      borderColor: '#007bff',
+      backgroundColor: 'transparent',
+      fill: false,
+      tension: 0.3,
+      pointRadius: 5,
+      pointHoverRadius: 7
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: { enabled: true }
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        suggestedMax: 100,
+        title: { display: true, text: 'Marks' }
+      },
+      x: {
+        title: { display: true, text: 'Subjects' }
+      }
+    }
+  }
+});
+
+// Radar Chart
+const radarCtx = document.getElementById('radarChart').getContext('2d');
+new Chart(radarCtx, {
+  type: 'radar',
+  data: {
+    labels: subjects,
+    datasets: [{
+      label: 'Marks',
+      data: marks,
+      backgroundColor: 'rgba(40, 167, 69, 0.2)',
+      borderColor: '#28a745',
+      borderWidth: 2,
+      pointRadius: 4,
+      pointHoverRadius: 6
+    }]
+  },
+  options: { 
+    responsive: true, 
+    scales: { r: { suggestedMin: 0, suggestedMax: 100 } } 
+  }
+});
+</script>
+
+{% endblock %}
