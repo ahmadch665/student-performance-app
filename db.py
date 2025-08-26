@@ -1,3 +1,4 @@
+import os
 import mysql.connector
 from mysql.connector import Error
 
@@ -5,10 +6,10 @@ def get_db_connection():
     """Establish and return a MySQL database connection."""
     try:
         connection = mysql.connector.connect(
-            host='localhost',
-            database='student_risk_db',
-            user='root',                    # Your MySQL username
-            password='YourNewPassword123!'  # Your MySQL password
+            host=os.environ.get('DB_HOST'),
+            database=os.environ.get('DB_NAME'),
+            user=os.environ.get('DB_USER'),
+            password=os.environ.get('DB_PASSWORD')
         )
         return connection
     except Error as e:
@@ -17,7 +18,6 @@ def get_db_connection():
 
 
 def fetch_users():
-    """Fetch all users including email."""
     conn = get_db_connection()
     if conn is None:
         return []
@@ -30,7 +30,6 @@ def fetch_users():
 
 
 def add_user(username, password_hash, role_id, email):
-    """Add a new user with email."""
     conn = get_db_connection()
     if conn is None:
         return False
@@ -51,7 +50,6 @@ def add_user(username, password_hash, role_id, email):
 
 
 def update_user_email(username, new_email):
-    """Update the email of an existing user."""
     conn = get_db_connection()
     if conn is None:
         return False
