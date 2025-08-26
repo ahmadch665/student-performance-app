@@ -4,3 +4,10 @@ scikit-learn
 numpy
 matplotlib
 seaborn
+gunicorn
+flask-login
+flask-bcrypt
+mysql-connector-python
+fpdf
+reportlab
+
