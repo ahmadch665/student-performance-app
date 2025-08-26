@@ -259,50 +259,54 @@ def index():
     return render_template('index.html')
 
 # ---------- Upload route ----------
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['POST'])
 @login_required
 @admin_required
 def upload():
-    if request.method == 'POST':
-        file = request.files['dataset']
-        if file and file.filename.endswith('.csv'):
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(filepath)
+    file = request.files.get('dataset')
 
-            try:
-                df = pd.read_csv(filepath)
-                if 'Risk_Level' in df.columns:
-                    flash("❌ Remove 'Risk_Level' column from CSV.", "danger")
-                    return redirect(url_for('upload'))
+    if not file or not file.filename.endswith('.csv'):
+        flash('❌ Invalid file format. Please upload a .csv file.', 'danger')
+        return redirect(url_for('admin_dashboard'))   # back to admin page
 
-                missing_fixed = [col for col in FIXED_COLUMNS if col not in df.columns]
-                if missing_fixed:
-                    flash(f"❌ Missing required columns: {', '.join(missing_fixed)}", "danger")
-                    return redirect(url_for('upload'))
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+    file.save(filepath)
 
-                subject_cols = [col for col in df.columns if col not in FIXED_COLUMNS]
-                invalid_subjects = [col for col in subject_cols if not col.endswith('_marks')]
-                if invalid_subjects:
-                    flash(f"❌ Invalid subject column(s): {', '.join(invalid_subjects)}.", "danger")
-                    return redirect(url_for('upload'))
+    try:
+        df = pd.read_csv(filepath)
 
-                if not pd.to_numeric(df['semester'], errors='coerce').between(1, 10).all():
-                    flash("❌ Semester values must be integers between 1 and 10.", "danger")
-                    return redirect(url_for('upload'))
+        # Validation rules
+        if 'Risk_Level' in df.columns:
+            flash("❌ Remove 'Risk_Level' column from CSV.", "danger")
+            return redirect(url_for('admin_dashboard'))
 
-                processed_df = preprocess_csv(filepath)
-                processed_df.to_csv('uploads/processed_data.csv', index=False)
-                flash('✅ File uploaded and preprocessed successfully!', 'success')
-                return redirect(url_for('dashboard'))
+        missing_fixed = [col for col in FIXED_COLUMNS if col not in df.columns]
+        if missing_fixed:
+            flash(f"❌ Missing required columns: {', '.join(missing_fixed)}", "danger")
+            return redirect(url_for('admin_dashboard'))
 
-            except Exception as e:
-                print("Preprocessing failed:", e)
-                flash(f'Error processing file: {str(e)}', 'danger')
-                return redirect(url_for('upload'))
-        else:
-            flash('❌ Invalid file format. Please upload a .csv file.', 'danger')
+        subject_cols = [col for col in df.columns if col not in FIXED_COLUMNS]
+        invalid_subjects = [col for col in subject_cols if not col.endswith('_marks')]
+        if invalid_subjects:
+            flash(f"❌ Invalid subject column(s): {', '.join(invalid_subjects)}.", "danger")
+            return redirect(url_for('admin_dashboard'))
 
-    return render_template('upload.html')
+        if not pd.to_numeric(df['semester'], errors='coerce').between(1, 10).all():
+            flash("❌ Semester values must be integers between 1 and 10.", "danger")
+            return redirect(url_for('admin_dashboard'))
+
+        # If all good → preprocess
+        processed_df = preprocess_csv(filepath)
+        processed_df.to_csv('uploads/processed_data.csv', index=False)
+
+        flash('✅ File uploaded and preprocessed successfully!', 'success')
+        return redirect(url_for('dashboard'))
+
+    except Exception as e:
+        print("Preprocessing failed:", e)
+        flash(f'Error processing file: {str(e)}', 'danger')
+        return redirect(url_for('admin_dashboard'))
+
 # ======= Admin Dashboard Route =======
 @app.route('/admin_dashboard')
 @login_required

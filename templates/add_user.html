@@ -1,5 +1,66 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  /* Apply uniform background */
+  body {
+   height: max-content;
+    background-attachment: fixed; /* Prevents background shift on scroll */
+    color: #ecf0f1;
+    min-height: 100vh;
+  
+  
+  }
+
+  .card {
+    background: #1e272e; /* Dark card */
+    color: #ecf0f1;
+    border-radius: 12px;
+    border: none;
+  }
+
+  .form-control, .form-select {
+    background-color: #2f3640;
+    color: #f5f6fa;
+    border: 1px solid #444;
+  }
+
+  .form-control:focus, .form-select:focus {
+    background-color: #353b48;
+    color: #fff;
+    border-color: #1abc9c;
+    box-shadow: 0 0 5px rgba(26, 188, 156, 0.7);
+  }
+.form-control::placeholder,
+.form-select::placeholder {
+  color: #ffffff !important;
+  opacity: 1; /* ensures it's not faded */
+}
+  .btn-primary {
+    background: #1abc9c;
+    border: none;
+    transition: 0.3s;
+  }
+
+  .btn-primary:hover {
+    background: #16a085;
+  }
+
+  .btn-secondary {
+    background: #7f8c8d;
+    border: none;
+    transition: 0.3s;
+  }
+
+  .btn-secondary:hover {
+    background: #636e72;
+  }
+
+  .alert {
+    border-radius: 8px;
+  }
+  
+</style>
+
 <div class="container mt-5">
 
   <!-- Flash messages -->
@@ -20,7 +81,7 @@
   <div class="row justify-content-center">
     <div class="col-md-6">
       <div class="card p-4 shadow">
-        <h4 class="card-title mb-4">Add Faculty / Advisor</h4>
+        <h4 class="card-title mb-4" style="color: black;">Add Faculty / Advisor</h4>
         <form action="{{ url_for('add_user') }}" method="POST">
           <div class="mb-3">
             <label for="username" class="form-label">Username</label>
@@ -47,26 +108,25 @@
           <div class="mb-3" id="subject-div" style="display: none;">
             <label for="subject" class="form-label">Add Subjects (Faculty only)</label>
             <input type="text" name="subject" id="subject" class="form-control" placeholder="e.g., math, science">
-            <small class="form-text text-muted">Separate multiple subjects with commas. '_marks' will be automatically added (e.g., math → math_marks)</small>
+            <small class="form-text text-muted" style="color: wheat !important;">Separate multiple subjects with commas. '_marks' will be automatically added (e.g., math → math_marks)</small>
           </div>
 
           <button type="submit" class="btn btn-primary w-100">Add User</button>
         </form>
-
       </div>
     </div>
   </div>
 </div>
 
 <script>
-// Show subject input only if role is Faculty
-document.getElementById('role').addEventListener('change', function() {
-  var subjectDiv = document.getElementById('subject-div');
-  if (this.value === '2') { // Faculty
-    subjectDiv.style.display = 'block';
-  } else {
-    subjectDiv.style.display = 'none';
-  }
-});
+  // Show subject input only if role is Faculty
+  document.getElementById('role').addEventListener('change', function() {
+    var subjectDiv = document.getElementById('subject-div');
+    if (this.value === '2') { // Faculty
+      subjectDiv.style.display = 'block';
+    } else {
+      subjectDiv.style.display = 'none';
+    }
+  });
 </script>
 {% endblock %}

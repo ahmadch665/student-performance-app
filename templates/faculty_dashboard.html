@@ -5,27 +5,34 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Faculty Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 <style>
-    body {
-        display: flex;
+    html, body {
         min-height: 100vh;
         margin: 0;
-        font-family: Arial, sans-serif;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f8f9fa;
     }
+
     /* Sidebar */
     #sidebar {
-        width: 220px;
-        background-color: #343a40;
+        width: 230px;
+        background-color: #212529;
         color: white;
         flex-shrink: 0;
         padding-top: 20px;
         position: fixed;
         height: 100vh;
         overflow-y: auto;
+        box-shadow: 2px 0 6px rgba(0,0,0,0.2);
     }
     #sidebar h5 {
         padding-left: 20px;
         margin-bottom: 15px;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #adb5bd;
     }
     #sidebar ul {
         list-style: none;
@@ -34,24 +41,32 @@
     #sidebar ul li {
         padding: 12px 20px;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-radius: 6px;
+        margin: 4px 10px;
+        transition: background 0.2s;
     }
     #sidebar ul li:hover, #sidebar ul li.active {
         background-color: #495057;
     }
-    #sidebar ul li span {
-        pointer-events: none;
-    }
 
     /* Main content */
     #content {
-        margin-left: 220px;
+        margin-left: 230px;
         padding: 20px;
-        width: 100%;
+        width: calc(100% - 230px);
     }
 
+    /* Charts */
     .chart-section {
         display: none;
         margin-top: 30px;
+        padding: 20px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     .chart-section.active {
         display: block;
@@ -59,25 +74,77 @@
 
     /* Table styling */
     .student-data-table {
-        width: 100%;
-        margin-bottom: 40px;
-        border-collapse: collapse; /* Ensure borders collapse nicely */
+        margin-top: 20px;
+        background: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
-    .student-data-table th, .student-data-table td {
-        border-right: 1px solid #dee2e6; /* vertical lines between columns */
-        padding: 8px; /* add some padding for readability */
+    .student-data-table th {
+        background-color: #343a40;
+        color: #fff;
+        text-align: center;
     }
-    .student-data-table th:last-child, .student-data-table td:last-child {
-        border-right: none; /* no border on last column */
+    .student-data-table td {
+        text-align: center;
     }
 
+    /* Filter + export section */
     .filter-label {
-        font-weight: bold;
-        margin-right: 10px;
+        font-weight: 600;
+        margin-bottom: 8px;
+        display: block;
+        color: #adb5bd;
     }
-    .risk-filter {
+    #riskFilter {
+        font-size: 0.9rem;
+    }
+    #exportCSV {
+        width: 100%;
+        font-size: 0.9rem;
+    }
+
+    /* Header */
+    .dashboard-header {
+        background:  #212529;;
+        padding: 15px 20px;
+        border-radius: 10px;
         margin-bottom: 20px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        color: white;
     }
+    .btn-logout {
+    background-color: #dc3545; /* Bootstrap danger red */
+    color: white;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+.btn-logout:hover {
+    background-color: #b02a37; /* darker red */
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.5);
+    transform: translateY(-1px);
+}
+.dashboard-header small {
+    display: block;
+    font-size: 0.95rem;
+    color: #adb5bd;
+    margin-top: 4px;
+}
+.welcome-message {
+    background: #f1f3f5;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 1rem;
+    color: #495057;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+
 </style>
 
 </head>
@@ -85,46 +152,50 @@
     <nav id="sidebar">
         <h5>Dashboard Menu</h5>
         <ul id="sidebar-menu">
-            <li class="active" data-target="risk-pie-chart">Risk Pie Chart</li>
-            <li data-target="subject-bar-chart">Subject Bar Chart</li>
-            <li data-target="trend-line-chart">Trend Line Chart</li>
-            <li data-target="radar-chart">Radar Chart</li>
+            <li class="active" data-target="risk-pie-chart"><i class="bi bi-pie-chart-fill"></i> Risk Pie Chart</li>
+            <li data-target="subject-bar-chart"><i class="bi bi-bar-chart-line-fill"></i> Subject Bar Chart</li>
+            <li data-target="trend-line-chart"><i class="bi bi-graph-up"></i> Trend Line Chart</li>
+            <li data-target="radar-chart"><i class="bi bi-bullseye"></i> Radar Chart</li>
         </ul>
 
         <div class="p-3 mt-4">
             <label class="filter-label" for="riskFilter">Filter by Risk Level:</label>
-            <select id="riskFilter" class="form-select">
+            <select id="riskFilter" class="form-select form-select-sm">
                 <option value="all" selected>All</option>
                 {% for risk in risk_data.keys() %}
                 <option value="{{ risk }}">{{ risk }}</option>
                 {% endfor %}
             </select>
         </div>
-        <div class="p-3 mt-3">
-    <label class="filter-label">Export Results:</label>
-    <div class="d-flex gap-2">
-        <button id="exportCSV" class="btn btn-outline-light btn-sm">Export CSV</button>
-    </div>
-</div>
+        <div class="p-3">
+            <label class="filter-label">Export Results:</label>
+            <button id="exportCSV" class="btn btn-success btn-sm">
+                <i class="bi bi-file-earmark-excel"></i> Export CSV
+            </button>
+        </div>
     </nav>
 
     <main id="content">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Faculty Dashboard</h2>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-danger">Logout</a>
-    </div>
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center dashboard-header">
+            <h2 class="mb-0">Faculty Dashboard</h2>
+            
 
-   
+            <a href="{{ url_for('logout') }}" class="btn btn-logout">
+    <i class="bi bi-box-arrow-right"></i> Logout
+</a>
 
-    <!-- rest of your content -->
-
+        </div>
+        <div class="welcome-message mt-2 mb-4">
+    <small class="text-muted">👋 Welcome, {{ current_user.username }}!</small>
+</div>
 
         <!-- Student Data Table -->
         {% if students %}
             <div>
                 <h4>Student Data</h4>
-                <div style="overflow-x:auto;">
-                    <table class="table table-striped student-data-table" id="studentTable">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover student-data-table" id="studentTable">
                         <thead>
                             <tr>
                                 {% for col in columns %}
@@ -167,7 +238,7 @@
         <div id="radar-chart" class="chart-section">
             <h4>Student Performance Radar</h4>
             <label for="radarStudentSelect" class="form-label">Select Student:</label>
-            <select id="radarStudentSelect" class="form-select" style="max-width: 300px; margin-bottom: 20px;">
+            <select id="radarStudentSelect" class="form-select form-select-sm" style="max-width: 300px; margin-bottom: 20px;">
                 {% for student_name in student_names %}
                 <option value="{{ student_name }}">{{ student_name }}</option>
                 {% endfor %}
