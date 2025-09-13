@@ -452,20 +452,38 @@ def dashboard():
 
 
 # ======= Predict Route =======
+# ======= Predict Route =======
 @app.route('/predict')
 @login_required
 def predict():
     try:
         # Get selected model from dropdown, default to SVM
-        selected_model = request.form.get("model")
-
+        # (keep your original behavior — reading form or args if needed)
+        selected_model = request.form.get("model") or request.args.get("model")
 
         filepath = 'uploads/processed_data.csv'
+
+        # ensure processed file exists before training
+        if not os.path.exists(filepath):
+            flash("Processed dataset not found. Upload and preprocess first.", "danger")
+            return redirect(url_for('dashboard'))
+
         # Updated: capture all model results
         df, best_model_name, best_accuracy, all_results = train_and_predict(filepath, selected_model)
 
         if 'Prediction' in df.columns:
             df.drop(columns=['Prediction'], inplace=True)
+
+        # *** NEW: save latest predictions so faculty/advisor always read latest run ***
+        try:
+            # ensure uploads folder exists
+            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                os.makedirs(app.config['UPLOAD_FOLDER'])
+            final_path = os.path.join(app.config['UPLOAD_FOLDER'], 'final_predictions.csv')
+            df.to_csv(final_path, index=False)
+        except Exception as save_exc:
+            # log but do not interrupt normal flow — dashboards will still render for admin
+            print("Warning: failed to save final_predictions.csv:", save_exc)
 
         # Prepare table
         table_html = df.to_html(classes='table table-striped student-data-table', index=False)
@@ -536,6 +554,7 @@ def predict():
         print("Prediction failed:", e)
         flash(f"Prediction failed: {str(e)}", 'danger')
         return redirect(url_for('dashboard'))
+
 
 
 
